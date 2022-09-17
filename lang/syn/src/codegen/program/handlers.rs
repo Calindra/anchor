@@ -96,6 +96,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                 let to = Pubkey::create_with_seed(&base, seed, owner).unwrap();
                 // Space: account discriminator || authority pubkey || vec len || vec data
                 let space = 8 + 32 + 4 + data_len as usize;
+                anchor_lang::prelude::msg!("Rent::get[1]");
                 let rent = Rent::get()?;
                 let lamports = rent.minimum_balance(space);
                 let seeds = &[&[nonce][..]];
@@ -205,7 +206,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                 let variant_arm = generate_ctor_variant(state);
                 let ix_name: proc_macro2::TokenStream =
                     generate_ctor_variant_name().parse().unwrap();
-                let ix_name_log = format!("Instruction: {}", ix_name);
+                let ix_name_log = format!("Instruction[1]: {}", ix_name);
                 if state.is_zero_copy {
                     quote! {
                         // One time state account initializer. Will faill on subsequent
@@ -237,6 +238,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                             let owner = ctor_accounts.program.key;
                             let to = Pubkey::create_with_seed(&base, seed, owner).unwrap();
                             let space = 8 + std::mem::size_of::<#name>();
+                            anchor_lang::prelude::msg!("Rent::get[2]");
                             let rent = Rent::get()?;
                             let lamports = rent.minimum_balance(std::convert::TryInto::try_into(space).unwrap());
                             let seeds = &[&[nonce][..]];
@@ -304,6 +306,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                             let mut __reallocs = std::collections::BTreeSet::new();
 
                             // Deserialize accounts.
+                            anchor_lang::prelude::msg!("Constructor handler: Deserialize accounts...");
                             let mut remaining_accounts: &[AccountInfo] = accounts;
                             let ctor_accounts =
                             anchor_lang::__private::Ctor::try_accounts(program_id, &mut remaining_accounts, &[], &mut __bumps, &mut __reallocs)?;
@@ -311,6 +314,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                             #anchor_ident::try_accounts(program_id, &mut remaining_accounts, ix_data, &mut __bumps, &mut __reallocs)?;
 
                             // Invoke the ctor.
+                            anchor_lang::prelude::msg!("Constructor handler: Invoke the ctor...");
                             let instance = #mod_name::#name::new(
                                 anchor_lang::context::Context::new(
                                     program_id,
@@ -328,6 +332,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                             let owner = ctor_accounts.program.key;
                             let to = Pubkey::create_with_seed(&base, seed, owner).unwrap();
                             let space = anchor_lang::__private::AccountSize::size(&instance)?;
+                            anchor_lang::prelude::msg!("Rent::get[3]");
                             let rent = Rent::get()?;
                             let lamports = rent.minimum_balance(std::convert::TryInto::try_into(space).unwrap());
                             let seeds = &[&[nonce][..]];
@@ -391,7 +396,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                         let variant_arm =
                             generate_ix_variant(ix.raw_method.sig.ident.to_string(), &ix.args);
                         let ix_name = generate_ix_variant_name(ix.raw_method.sig.ident.to_string());
-                        let ix_name_log = format!("Instruction: {}", ix_name);
+                        let ix_name_log = format!("Instruction[2]: {}", ix_name);
 
                         if state.is_zero_copy {
                             quote! {
@@ -423,6 +428,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                                     let loader: anchor_lang::accounts::loader::Loader<#mod_name::#name> = anchor_lang::accounts::loader::Loader::try_accounts(program_id, &mut remaining_accounts, &[], &mut __bumps, &mut __reallocs)?;
 
                                     // Deserialize accounts.
+                                    anchor_lang::prelude::msg!("State method handlers: Deserialize accounts...");
                                     let mut accounts = #anchor_ident::try_accounts(
                                         program_id,
                                         &mut remaining_accounts,
@@ -556,7 +562,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                                 let state_ty: proc_macro2::TokenStream = state.name.parse().unwrap();
                                 let anchor_ident = &ix.anchor_ident;
                                 let ix_name = generate_ix_variant_name(ix.raw_method.sig.ident.to_string());
-                                let ix_name_log = format!("Instruction: {}", ix_name);
+                                let ix_name_log = format!("Instruction[3]: {}", ix_name);
 
                                 let raw_args: Vec<&syn::PatType> = ix
                                     .args
@@ -717,7 +723,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
             let ix_method_name = &ix.raw_method.sig.ident;
             let anchor = &ix.anchor_ident;
             let variant_arm = generate_ix_variant(ix.raw_method.sig.ident.to_string(), &ix.args);
-            let ix_name_log = format!("Instruction: {}", ix_name);
+            let ix_name_log = format!("Instruction[4]: {}", ix_name);
             let ret_type = &ix.returns.ty.to_token_stream();
             let maybe_set_return_data = match ret_type.to_string().as_str() {
                 "()" => quote! {},
@@ -736,16 +742,19 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                     anchor_lang::prelude::msg!(#ix_name_log);
 
                     // Deserialize data.
+                    anchor_lang::prelude::msg!("Deserialize data[4]...");
                     let ix = instruction::#ix_name::deserialize(&mut &ix_data[..])
                         .map_err(|_| anchor_lang::error::ErrorCode::InstructionDidNotDeserialize)?;
                     let instruction::#variant_arm = ix;
 
                     // Bump collector.
+                    anchor_lang::prelude::msg!("Bump collector[4]...");
                     let mut __bumps = std::collections::BTreeMap::new();
 
                     let mut __reallocs = std::collections::BTreeSet::new();
 
                     // Deserialize accounts.
+                    anchor_lang::prelude::msg!("Deserialize accounts[4]...");
                     let mut remaining_accounts: &[AccountInfo] = accounts;
                     let mut accounts = #anchor::try_accounts(
                         program_id,
@@ -756,6 +765,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                     )?;
 
                     // Invoke user defined handler.
+                    anchor_lang::prelude::msg!("Invoke user defined handler[4]...");
                     let result = #program_name::#ix_method_name(
                         anchor_lang::context::Context::new(
                             program_id,
@@ -767,9 +777,11 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                     )?;
 
                     // Maybe set Solana return data.
+                    anchor_lang::prelude::msg!("Maybe set Solana return data[4]...");
                     #maybe_set_return_data
 
                     // Exit routine.
+                    anchor_lang::prelude::msg!("Exit routine[4]...");
                     accounts.exit(program_id)
                 }
             }

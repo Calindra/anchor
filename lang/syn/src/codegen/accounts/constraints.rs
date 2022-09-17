@@ -9,7 +9,10 @@ pub fn generate(f: &Field) -> proc_macro2::TokenStream {
     let rent = constraints
         .iter()
         .any(|c| matches!(c, Constraint::RentExempt(ConstraintRentExempt::Enforce)))
-        .then(|| quote! { let __anchor_rent = Rent::get()?; })
+        .then(|| quote! { 
+            anchor_lang::prelude::msg!("generate -> Rent::get[1]");
+            let __anchor_rent = Rent::get()?;
+        })
         .unwrap_or_else(|| quote! {});
 
     let checks: Vec<proc_macro2::TokenStream> = constraints
@@ -339,7 +342,7 @@ fn generate_constraint_realloc(f: &Field, c: &ConstraintReallocGroup) -> proc_ma
         if __reallocs.contains(&#field.key()) {
             return Err(anchor_lang::error::Error::from(anchor_lang::error::ErrorCode::AccountDuplicateReallocs).with_account_name(#account_name));
         }
-
+        anchor_lang::prelude::msg!("generate_constraint_realloc -> Rent::get[1]");
         let __anchor_rent = anchor_lang::prelude::Rent::get()?;
         let __field_info = #field.to_account_info();
         let __new_rent_minimum = __anchor_rent.minimum_balance(#new_space);
